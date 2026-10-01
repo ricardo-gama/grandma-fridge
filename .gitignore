@@ -5,3 +5,5 @@ artifacts/
 data/
 __pycache__/
 .ipynb_checkpoints/.venv/
+.DS_Store
+.ipynb_checkpoints/

@@ -221,6 +221,7 @@ def main():
             logger.info("\nGate FAILED for %s: %s", winner["persona"], "; ".join(gate_failures))
             logger.info("Not promoting. Avó keeps serving the current champion.")
             return
+            
 
         logger.info("\nGate passed for %s.", winner["persona"])
 

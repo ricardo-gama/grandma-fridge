@@ -143,39 +143,40 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2:3b
 A small model like `llama3.2:3b` needs ~2-4GB disk and 4-8GB RAM, runs CPU-only, and answers in a few seconds. Worth knowing: it's noticeably weaker than Gemini, so expect lower scores when the evaluation runs on the fallback.
 
 ## Layout
+```
 grandma-fridge/
 ├── .github/
-│ └── workflows/
-│ └── ci.yml # stack rules + notebook hygiene, runs on every push/PR
-├── tests/ # static checks ci.yml runs — nothing has to be running
-│ ├── test_compose.py
-│ ├── test_dockerfiles.py
-│ ├── test_requirements.py
-│ ├── test_secrets.py
-│ ├── test_personas.py
-│ ├── test_evaluation_set.py
-│ └── test_notebooks.py
+│   └── workflows/
+│       └── ci.yml              # stack rules + notebook hygiene, runs on every push/PR
+├── tests/                      # static checks ci.yml runs — nothing has to be running
+│   ├── test_compose.py
+│   ├── test_dockerfiles.py
+│   ├── test_requirements.py
+│   ├── test_secrets.py
+│   ├── test_personas.py
+│   ├── test_evaluation_set.py
+│   └── test_notebooks.py
 ├── docker/
-│ ├── docker-compose.yml # mlflow + jupyter + api (+ ollama, optional profile)
-│ ├── Dockerfile.api
-│ ├── Dockerfile.jupyter
-│ ├── init-mlflow.sh
-│ ├── requirements.txt # pinned
-│ └── .env.example
+│   ├── docker-compose.yml     # mlflow + jupyter + api (+ ollama, optional profile)
+│   ├── Dockerfile.api
+│   ├── Dockerfile.jupyter
+│   ├── init-mlflow.sh
+│   ├── requirements.txt       # pinned
+│   └── .env.example
 ├── api/
-│ ├── fridge_app.py # Flask service — serves prompts:/avo-fridge-persona@champion AND the UI
-│ └── static/
-│ ├── index.html # the frontend
-│ ├── styles.css
-│ └── app.js
+│   ├── fridge_app.py           # Flask service — serves prompts:/avo-fridge-persona@champion AND the UI
+│   └── static/
+│       ├── index.html          # the frontend
+│       ├── styles.css
+│       └── app.js
 ├── src/
-│ ├── llm_client.py # the only file that knows Gemini (+ Ollama fallback)
-│ ├── grandma_personas.py # the four personas, shared by pipeline and service
-│ ├── evaluation_set.py # the fixed bar
-│ └── evaluate_personas.py # score, rank, gate, promote
+│   ├── llm_client.py          # the only file that knows Gemini (+ Ollama fallback)
+│   ├── grandma_personas.py    # the four personas, shared by pipeline and service
+│   ├── evaluation_set.py      # the fixed bar
+│   └── evaluate_personas.py   # score, rank, gate, promote
 └── notebooks/
-└── grandma_prototyping.ipynb # persona prototyping AND evaluation — run it from here
-
+    └── grandma_prototyping.ipynb  # persona prototyping AND evaluation — run it from here
+```
 
 ## Continuous Integration
 

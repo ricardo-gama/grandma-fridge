@@ -143,30 +143,43 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2:3b
 A small model like `llama3.2:3b` needs ~2-4GB disk and 4-8GB RAM, runs CPU-only, and answers in a few seconds. Worth knowing: it's noticeably weaker than Gemini, so expect lower scores when the evaluation runs on the fallback.
 
 ## Layout
-
-```
 grandma-fridge/
+├── .github/
+│ └── workflows/
+│ └── ci.yml # stack rules + notebook hygiene, runs on every push/PR
+├── tests/ # static checks ci.yml runs — nothing has to be running
+│ ├── test_compose.py
+│ ├── test_dockerfiles.py
+│ ├── test_requirements.py
+│ ├── test_secrets.py
+│ ├── test_personas.py
+│ ├── test_evaluation_set.py
+│ └── test_notebooks.py
 ├── docker/
-│   ├── docker-compose.yml     # mlflow + jupyter + api (+ ollama, optional profile)
-│   ├── Dockerfile.api
-│   ├── Dockerfile.jupyter
-│   ├── init-mlflow.sh
-│   ├── requirements.txt       # pinned
-│   └── .env.example
+│ ├── docker-compose.yml # mlflow + jupyter + api (+ ollama, optional profile)
+│ ├── Dockerfile.api
+│ ├── Dockerfile.jupyter
+│ ├── init-mlflow.sh
+│ ├── requirements.txt # pinned
+│ └── .env.example
 ├── api/
-│   ├── fridge_app.py           # Flask service — serves prompts:/avo-fridge-persona@champion AND the UI
-│   └── static/
-│       ├── index.html          # the frontend
-│       ├── styles.css
-│       └── app.js
+│ ├── fridge_app.py # Flask service — serves prompts:/avo-fridge-persona@champion AND the UI
+│ └── static/
+│ ├── index.html # the frontend
+│ ├── styles.css
+│ └── app.js
 ├── src/
-│   ├── llm_client.py          # the only file that knows Gemini (+ Ollama fallback)
-│   ├── grandma_personas.py    # the four personas, shared by pipeline and service
-│   ├── evaluation_set.py      # the fixed bar
-│   └── evaluate_personas.py   # score, rank, gate, promote
+│ ├── llm_client.py # the only file that knows Gemini (+ Ollama fallback)
+│ ├── grandma_personas.py # the four personas, shared by pipeline and service
+│ ├── evaluation_set.py # the fixed bar
+│ └── evaluate_personas.py # score, rank, gate, promote
 └── notebooks/
-    └── grandma_prototyping.ipynb  # persona prototyping AND evaluation — run it from here
-```
+└── grandma_prototyping.ipynb # persona prototyping AND evaluation — run it from here
+
+
+## Continuous Integration
+
+Every push and pull request (including from forks) runs `tests/` in GitHub Actions (`.github/workflows/ci.yml`): stack rules (compose services wired correctly, secrets never hardcoded, Dockerfiles pinned) and notebook hygiene (no committed cell outputs, no leaked keys, personas and evaluation set structurally intact). Nothing here calls Gemini or needs a secret, so every contributor — including a fork with no access to your API key — gets the same feedback in seconds.
 
 ## Future work
 
@@ -174,7 +187,7 @@ Scoped out for now, in rough priority order:
 
 - **An on-topic/off-topic classifier.** `evaluation_set.py`'s `ON_TOPIC`/`OFF_TOPIC` cases are already labeled — a small classifier trained on them could sit in front of the LLM call as a cheap pre-filter (obviously junk input gets refused without spending a Gemini call), and would register to MLflow's **Model Registry**, alongside the Prompt Registry already in use.
 - **A real Gemini-vs-Ollama comparison.** Today Ollama is only a fallback triggered on Gemini errors (`ollama_fallback_rate` counts *incidents*, not a controlled comparison). Running `score_persona()` once per provider, logged as separate MLflow runs, would show the actual quality/cost tradeoff.
-- **CI/CD** — a GitHub Actions workflow that builds the images and runs the evaluation gate on every push, failing the build if `refusal_accuracy` or `overall_score` don't clear the bar.
+- **Run the evaluation gate itself in CI**, not just static stack/notebook checks — a workflow that builds the images and calls `evaluate_personas.py` against a throwaway MLflow instance on every push, failing the build if `refusal_accuracy` or `overall_score` don't clear the bar. Held back deliberately: it needs a `GEMINI_API_KEY` secret, which a fork's CI run wouldn't have, so today's CI stays secret-free and fork-friendly instead.
 - **A publicly reachable deployment** — today's setup (Docker Compose on one machine) is fully containerized and satisfies the course's "deploy in a container" requirement, but it depends on that machine staying on. Deploying `mlflow` + `api` together to a host like Railway or Render (same Dockerfiles, no rewrite) would make it reachable without a laptop running.
 
 ## Secrets
@@ -203,6 +216,8 @@ curl -s http://localhost:8000/health
 **Docker Desktop won't start (Windows)** — usually a WSL2 issue. Try `wsl --update` then `wsl --shutdown`, then reopen Docker Desktop. If disk space is the blocker, run Disk Cleanup (`cleanmgr`) targeting Windows Update files first.
 
 **`avo-api` keeps restarting / `python: can't open file '/app/api/fridge_app.py'`** — `api/fridge_app.py` doesn't exist on your machine yet, or is incomplete (check with `wc -l api/fridge_app.py` — it should be a few hundred lines, ending cleanly with `app.run(...)`). Rebuild after fixing it: `docker compose -f docker/docker-compose.yml build --no-cache api && docker compose -f docker/docker-compose.yml up -d api`.
+
+**CI fails on `test_no_committed_cell_outputs`** — a notebook was saved with run output still in it. Clear outputs before committing: `jupyter nbconvert --clear-output --inplace notebooks/*.ipynb`, or `Kernel → Restart & Clear Output` in Jupyter.
 
 **Want to share the running app with someone outside your machine?** Everything here is designed to run at `localhost:8000` with nothing external needed. If you do want it reachable from another device or over the internet temporarily (a remote demo, say), tunnel it: `ngrok http 8000`, then use the `https://....ngrok-free.app` URL it prints. That URL changes every time you restart the tunnel on the free tier — for anything longer-lived, see Future Work's deployment note above.
 

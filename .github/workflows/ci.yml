@@ -1,0 +1,30 @@
+name: CI
+
+# Runs on every push and every pull request, including pull requests from forks.
+# Nothing here needs a secret, so it gives the same feedback to everyone.
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    name: Stack rules and notebook hygiene
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Same version the stack runs on — see docker/Dockerfile.api and Dockerfile.jupyter.
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install pytest pyyaml requests
+
+      - name: Run checks
+        # tests/ holds rules that read the compose files, personas and notebooks from disk.
+        # Nothing has to be running, so this finishes in seconds.
+        run: pytest tests/ -v

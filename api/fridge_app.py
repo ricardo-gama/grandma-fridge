@@ -307,6 +307,7 @@ def reload_persona_from_mlflow():
 
 @app.route('/persona/info', methods=['GET'])
 def persona_info_route():
+    load_champion_persona
     return jsonify(persona_info)
     # return jsonify({
     #     "current_persona": current_persona,
